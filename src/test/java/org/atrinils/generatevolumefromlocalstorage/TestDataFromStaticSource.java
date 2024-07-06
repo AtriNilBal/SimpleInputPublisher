@@ -3,8 +3,6 @@ package org.atrinils.generatevolumefromlocalstorage;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -48,18 +46,35 @@ public class TestDataFromStaticSource {
         return publishSingleDataSet;
     }
 
-    public static void inputVolumeGenerator(Runnable singleInputPublisher, Long timeGapPerInputPublish, Long durationInMinutes) {
-        Thread inputVolumeGenerator = new Thread(singleInputPublisher);
+    public static void inputVolumeGenerator(Runnable publishInputSample, Long timeGapPerInputPublish, TimeUnit timeGapUnit, Long durationInMinutes) {
+        Thread inputVolumeGenerator = new Thread(publishInputSample);
         Instant timeNow = Instant.now();
         while(Duration.between(timeNow,Instant.now()).getSeconds() <= (durationInMinutes*60)) {
+
+            Instant startTime = Instant.now(); // used to get correct wait time in between subsequent input publishes
             inputVolumeGenerator.run();
 
             try{
-                Thread.sleep(timeGapPerInputPublish);
+                Thread.sleep(getRemainingWaitTime(timeGapPerInputPublish, timeGapUnit, startTime));
             } catch(InterruptedException e) {
                 System.out.println("exception caught in catch block during interim wait of inputs publish");
             }
         }
+    }
+
+    public static long getRemainingWaitTime(Long waitDuration, TimeUnit waitDurationTimeUnit, Instant offsetTime) {
+        double multiplier = 0.0;
+        if(waitDurationTimeUnit.equals(TimeUnit.SECONDS)) {
+            multiplier = 1000;
+        } else if (waitDurationTimeUnit.equals(TimeUnit.MILLISECONDS)) {
+            multiplier = 1;
+        } else if (waitDurationTimeUnit.equals(TimeUnit.MICROSECONDS)) {
+            multiplier = 0.001;
+        } else if (waitDurationTimeUnit.equals(TimeUnit.NANOSECONDS)) {
+            multiplier = 0.000001;
+        }
+
+        return (long) ((waitDuration - Duration.between(offsetTime, Instant.now()).getSeconds())*multiplier);
     }
 
     public static void main(String[] args) {
@@ -67,7 +82,7 @@ public class TestDataFromStaticSource {
         long durationInMinutes = 1;
 
         inputVolumeGenerator(prepareInputVolumeGenerator(getTestData()),
-                100L, durationInMinutes);
+                100L, TimeUnit.MILLISECONDS, durationInMinutes);
 
     }
 }
