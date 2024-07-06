@@ -28,13 +28,10 @@ public class TestDataFromStaticSource {
         return inputData;
     }
 
-    public static void main(String[] args) {
-
-        long durationInMinutes = 1;
-        long waitTimeBetweenEachInputInSeconds = 1;
+    public static Runnable prepareInputVolumeGenerator(List<Map<String, Object>> inputData) {
 
         Random random = new Random();
-        BiFunction<String, Object, Object> randomInputGenFunction = (k, v) -> {
+        BiFunction<String, Object, Object> randomInputGenFunction = (k,v) -> {
             double randomNum = (random.nextInt(100)/100.0);
             return randomNum + random.nextInt(900);
         };
@@ -42,19 +39,26 @@ public class TestDataFromStaticSource {
 
         Runnable publishSingleDataSet = () -> {
             System.out.printf("Input Sample no - %d \n",publishedSamplesCounter.getAndIncrement());
-            for(Map<String, Object> dataSet : getTestData()) {
+            for(Map<String, Object> dataSet : inputData) {
                 dataSet.compute("SELL", randomInputGenFunction);
                 dataSet.compute("BUY", randomInputGenFunction);
                 System.out.println("Publishing input : " + dataSet.values());
             }
         };
+        return publishSingleDataSet;
+    }
+
+    public static void main(String[] args) {
+
+        long durationInMinutes = 1;
+        long waitTimeBetweenEachInputInSeconds = 1;
 
         Instant startTime = Instant.now();
         Instant endTime = Instant.now();
         ScheduledExecutorService inputVolumePublisher = Executors.newSingleThreadScheduledExecutor();
         try {
             while(Duration.between(startTime, Instant.now()).getSeconds() <= (durationInMinutes*60)) {
-                inputVolumePublisher.scheduleAtFixedRate(publishSingleDataSet,
+                inputVolumePublisher.scheduleAtFixedRate(prepareInputVolumeGenerator(getTestData()),
                         1000, waitTimeBetweenEachInputInSeconds*1000,
                         TimeUnit.MILLISECONDS);
             }
