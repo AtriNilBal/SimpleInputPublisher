@@ -48,26 +48,26 @@ public class TestDataFromStaticSource {
         return publishSingleDataSet;
     }
 
+    public static void inputVolumeGenerator(Runnable singleInputPublisher, Long timeGapPerInputPublish, Long durationInMinutes) {
+        Thread inputVolumeGenerator = new Thread(singleInputPublisher);
+        Instant timeNow = Instant.now();
+        while(Duration.between(timeNow,Instant.now()).getSeconds() <= (durationInMinutes*60)) {
+            inputVolumeGenerator.run();
+
+            try{
+                Thread.sleep(timeGapPerInputPublish);
+            } catch(InterruptedException e) {
+                System.out.println("exception caught in catch block during interim wait of inputs publish");
+            }
+        }
+    }
+
     public static void main(String[] args) {
 
         long durationInMinutes = 1;
-        long waitTimeBetweenEachInputInSeconds = 1;
 
-        Instant startTime = Instant.now();
-        Instant endTime = Instant.now();
-        ScheduledExecutorService inputVolumePublisher = Executors.newSingleThreadScheduledExecutor();
-        try {
-            while(Duration.between(startTime, Instant.now()).getSeconds() <= (durationInMinutes*60)) {
-                inputVolumePublisher.scheduleAtFixedRate(prepareInputVolumeGenerator(getTestData()),
-                        1000, waitTimeBetweenEachInputInSeconds*1000,
-                        TimeUnit.MILLISECONDS);
-            }
-            endTime = Instant.now();
-        } finally {
-            inputVolumePublisher.shutdown();
-        }
-
-        System.out.printf("Start time %s and End time %s\n", startTime, endTime);
+        inputVolumeGenerator(prepareInputVolumeGenerator(getTestData()),
+                100L, durationInMinutes);
 
     }
 }
