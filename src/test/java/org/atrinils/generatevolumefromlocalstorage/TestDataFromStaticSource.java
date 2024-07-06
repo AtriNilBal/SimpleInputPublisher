@@ -3,9 +3,10 @@ package org.atrinils.generatevolumefromlocalstorage;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 public class TestDataFromStaticSource {
 
@@ -47,6 +48,7 @@ public class TestDataFromStaticSource {
     }
 
     public static void inputVolumeGenerator(Runnable publishInputSample, Long timeGapPerInputPublish, TimeUnit timeGapUnit, Long durationInMinutes) {
+
         Thread inputVolumeGenerator = new Thread(publishInputSample);
         Instant timeNow = Instant.now();
         while(Duration.between(timeNow,Instant.now()).getSeconds() <= (durationInMinutes*60)) {
@@ -81,8 +83,39 @@ public class TestDataFromStaticSource {
 
         long durationInMinutes = 1;
 
+        Supplier<Double> getCpuUsageData = () -> getCpuUsedPerc();
+        Supplier<Double> getMemUsageData = () -> getHeapMemUsedPerc();
+
+        List<String> systemStatistics = new ArrayList<>();
+
+        Runnable fetchSystemStatistics = () -> {
+            systemStatistics.add(getCpuUsageData.get()+"::"+getMemUsageData.get());
+        };
+
+        ScheduledExecutorService getSystemStatsData = Executors.newSingleThreadScheduledExecutor();
+        getSystemStatsData.scheduleAtFixedRate(fetchSystemStatistics, 10, 30, TimeUnit.MILLISECONDS);
+
+
         inputVolumeGenerator(prepareInputVolumeGenerator(getTestData()),
                 100L, TimeUnit.MILLISECONDS, durationInMinutes);
 
+        getSystemStatsData.shutdown();
+
+    }
+
+    public static double getCpuUsedPerc() {
+        double cpuUsagePercAtCurrentInstant = 0.0;
+
+        //get cpu usage percentage and return
+
+        return cpuUsagePercAtCurrentInstant;
+    }
+
+    public static double getHeapMemUsedPerc() {
+        double heapMemUsagePerAtCurrentInstant = 0.0;
+
+        //get memory usage percentage and return
+
+        return heapMemUsagePerAtCurrentInstant;
     }
 }
