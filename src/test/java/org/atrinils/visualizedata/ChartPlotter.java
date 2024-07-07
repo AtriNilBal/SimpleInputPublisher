@@ -104,6 +104,11 @@ public class ChartPlotter {
 
     }
 
+    /***
+     * ChartPlotter chartPlotter = new ChartPlotter(identifier, list of string);
+     * chartPlotter.generateGraph(new File("graph.png"), 1700, 800);
+     * ***/
+
     public void generateGraph(File file, int width, int height) {
         JFreeChart chart= ChartFactory.createXYLineChart(
                 getGraphTitle()
